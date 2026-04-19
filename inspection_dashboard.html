@@ -1,0 +1,1293 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vehicle Inspection Dashboard — ศูนย์บริหารจัดการรถ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-primary: #0b0f1a;
+    --bg-card: #111827;
+    --bg-card2: #1a2235;
+    --bg-hover: #1e2d45;
+    --border: #1e3a5f;
+    --border-light: #243552;
+    --amber: #f59e0b;
+    --amber-dim: #92600a;
+    --green: #10b981;
+    --green-dim: #065f46;
+    --red: #ef4444;
+    --red-dim: #7f1d1d;
+    --orange: #f97316;
+    --orange-dim: #7c2d12;
+    --blue: #3b82f6;
+    --blue-dim: #1e3a8a;
+    --text-primary: #e2e8f0;
+    --text-secondary: #94a3b8;
+    --text-muted: #475569;
+    --accent: #0ea5e9;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Sarabun', sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    font-size: 14px;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: linear-gradient(135deg, #0d1829 0%, #0b1622 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .header-left { display: flex; align-items: center; gap: 16px; }
+
+  .logo-badge {
+    width: 36px; height: 36px;
+    background: var(--amber);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+
+  .header-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.5px;
+  }
+
+  .header-sub {
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .header-right {
+    display: flex; align-items: center; gap: 12px;
+  }
+
+  .live-badge {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(16,185,129,0.1);
+    border: 1px solid rgba(16,185,129,0.3);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 11px;
+    color: var(--green);
+    font-family: 'Space Mono', monospace;
+  }
+
+  .live-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .date-badge {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--text-secondary);
+  }
+
+  /* ── MAIN LAYOUT ── */
+  main { padding: 28px 32px; max-width: 1600px; margin: 0 auto; }
+
+  /* ── KPI CARDS ── */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  .kpi-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .kpi-card:hover { border-color: var(--accent); }
+
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+
+  .kpi-card.total::before { background: var(--accent); }
+  .kpi-card.inspected::before { background: var(--green); }
+  .kpi-card.not-inspected::before { background: var(--text-muted); }
+  .kpi-card.issues::before { background: var(--red); }
+
+  .kpi-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-family: 'Space Mono', monospace;
+    margin-bottom: 10px;
+  }
+
+  .kpi-value {
+    font-size: 42px;
+    font-weight: 700;
+    font-family: 'Space Mono', monospace;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .kpi-card.total .kpi-value { color: var(--accent); }
+  .kpi-card.inspected .kpi-value { color: var(--green); }
+  .kpi-card.not-inspected .kpi-value { color: var(--text-secondary); }
+  .kpi-card.issues .kpi-value { color: var(--red); }
+
+  .kpi-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .kpi-icon {
+    position: absolute;
+    right: 20px; top: 20px;
+    font-size: 32px;
+    opacity: 0.12;
+  }
+
+  /* ── CONTROLS ── */
+  .controls-bar {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .search-box {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-light);
+    border-radius: 7px;
+    padding: 7px 12px;
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .search-box input {
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    font-family: 'Sarabun', sans-serif;
+    font-size: 13px;
+    outline: none;
+    width: 100%;
+  }
+
+  .search-box input::placeholder { color: var(--text-muted); }
+
+  .filter-group { display: flex; align-items: center; gap: 8px; }
+
+  .filter-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-family: 'Space Mono', monospace;
+    white-space: nowrap;
+  }
+
+  .filter-select {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-light);
+    border-radius: 7px;
+    color: var(--text-primary);
+    font-family: 'Sarabun', sans-serif;
+    font-size: 13px;
+    padding: 7px 12px;
+    cursor: pointer;
+    outline: none;
+  }
+
+  .filter-tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    padding: 3px;
+  }
+
+  .filter-tab {
+    padding: 5px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--text-muted);
+    transition: all 0.15s;
+    user-select: none;
+    white-space: nowrap;
+  }
+
+  .filter-tab:hover { color: var(--text-primary); background: var(--bg-card2); }
+  .filter-tab.active { background: var(--accent); color: #fff; font-weight: 600; }
+  .filter-tab.active.green { background: var(--green); }
+  .filter-tab.active.gray { background: var(--text-muted); }
+  .filter-tab.active.red { background: var(--red); }
+  .filter-tab.active.orange { background: var(--orange); }
+
+  .results-count {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-family: 'Space Mono', monospace;
+    margin-left: auto;
+    white-space: nowrap;
+  }
+
+  /* ── VEHICLE TABLE ── */
+  .table-container {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  thead {
+    background: var(--bg-card2);
+    border-bottom: 1px solid var(--border);
+  }
+
+  th {
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    font-family: 'Space Mono', monospace;
+    font-weight: 400;
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+  }
+
+  th:hover { color: var(--text-primary); }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border-light);
+    transition: background 0.15s;
+    cursor: pointer;
+  }
+
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--bg-hover); }
+
+  td {
+    padding: 12px 16px;
+    vertical-align: middle;
+  }
+
+  .plate-cell {
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.5px;
+  }
+
+  .brand-badge {
+    display: inline-block;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-light);
+    border-radius: 4px;
+    padding: 1px 7px;
+    font-size: 10px;
+    color: var(--text-secondary);
+    font-family: 'Space Mono', monospace;
+  }
+
+  .dept-tag {
+    background: rgba(14,165,233,0.1);
+    border: 1px solid rgba(14,165,233,0.2);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 11px;
+    color: var(--accent);
+    display: inline-block;
+  }
+
+  .vtype-tag {
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 10px;
+    display: inline-block;
+  }
+
+  .vtype-tag.crane {
+    background: rgba(249,115,22,0.1);
+    border: 1px solid rgba(249,115,22,0.25);
+    color: var(--orange);
+  }
+
+  .vtype-tag.regular {
+    background: rgba(148,163,184,0.1);
+    border: 1px solid rgba(148,163,184,0.15);
+    color: var(--text-secondary);
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .status-badge.ok {
+    background: rgba(16,185,129,0.1);
+    border: 1px solid rgba(16,185,129,0.3);
+    color: var(--green);
+  }
+
+  .status-badge.issues {
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.3);
+    color: var(--red);
+  }
+
+  .status-badge.none {
+    background: rgba(71,85,105,0.2);
+    border: 1px solid rgba(71,85,105,0.3);
+    color: var(--text-muted);
+  }
+
+  .status-badge.overdue {
+    background: rgba(245,158,11,0.1);
+    border: 1px solid rgba(245,158,11,0.3);
+    color: var(--amber);
+  }
+
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .count-badge {
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    color: var(--text-primary);
+    font-weight: 700;
+  }
+
+  .zero-count { color: var(--text-muted); }
+
+  .days-cell {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+  }
+
+  .days-cell.fresh { color: var(--green); }
+  .days-cell.moderate { color: var(--amber); }
+  .days-cell.stale { color: var(--red); }
+  .days-cell.none { color: var(--text-muted); }
+
+  .abnormal-pills {
+    display: flex; flex-wrap: wrap; gap: 4px;
+  }
+
+  .abnormal-pill {
+    background: rgba(239,68,68,0.08);
+    border: 1px solid rgba(239,68,68,0.2);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 10px;
+    color: #fca5a5;
+  }
+
+  .history-dots {
+    display: flex; gap: 3px; align-items: center;
+  }
+
+  .hdot {
+    width: 8px; height: 8px;
+    border-radius: 2px;
+    transition: transform 0.1s;
+  }
+
+  .hdot:hover { transform: scale(1.4); }
+  .hdot.ok { background: var(--green); }
+  .hdot.issue { background: var(--red); }
+
+  .view-btn {
+    background: none;
+    border: 1px solid var(--border-light);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 5px 10px;
+    font-size: 12px;
+    font-family: 'Sarabun', sans-serif;
+    transition: all 0.15s;
+  }
+
+  .view-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    border-color: var(--accent);
+  }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+
+  .modal-overlay.open {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .modal {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 700px;
+    max-height: 85vh;
+    overflow-y: auto;
+    transform: translateY(20px);
+    transition: transform 0.2s;
+  }
+
+  .modal-overlay.open .modal { transform: translateY(0); }
+
+  .modal-header {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--border-light);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    background: var(--bg-card);
+    z-index: 10;
+  }
+
+  .modal-plate {
+    font-family: 'Space Mono', monospace;
+    font-size: 22px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 1px;
+  }
+
+  .modal-close {
+    background: none;
+    border: 1px solid var(--border-light);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 6px 10px;
+    font-size: 16px;
+    line-height: 1;
+    transition: all 0.15s;
+  }
+
+  .modal-close:hover { background: var(--bg-hover); color: #fff; }
+
+  .modal-body { padding: 20px 24px; }
+
+  .modal-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .meta-item {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    padding: 10px 14px;
+  }
+
+  .meta-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-family: 'Space Mono', monospace;
+    margin-bottom: 4px;
+  }
+
+  .meta-value {
+    font-size: 13px;
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+
+  .section-title {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    font-family: 'Space Mono', monospace;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  .history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 20px;
+  }
+
+  .history-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-light);
+    border-radius: 7px;
+    padding: 10px 14px;
+  }
+
+  .history-item.has-issue {
+    border-color: rgba(239,68,68,0.3);
+    background: rgba(239,68,68,0.04);
+  }
+
+  .h-date {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--text-secondary);
+    min-width: 100px;
+  }
+
+  .h-inspector {
+    font-size: 13px;
+    color: var(--text-primary);
+    flex: 1;
+  }
+
+  .h-status {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 10px;
+    border-radius: 10px;
+  }
+
+  .h-status.ok { background: rgba(16,185,129,0.1); color: var(--green); }
+  .h-status.issue { background: rgba(239,68,68,0.1); color: var(--red); }
+
+  .abnormal-section { margin-top: 16px; }
+
+  .abnormal-grid {
+    display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;
+  }
+
+  .abnormal-item {
+    background: rgba(239,68,68,0.08);
+    border: 1px solid rgba(239,68,68,0.25);
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 12px;
+    color: #fca5a5;
+    display: flex; align-items: center; gap: 5px;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    margin-top: 40px;
+    border-top: 1px solid var(--border-light);
+    padding: 20px 32px;
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: 'Space Mono', monospace;
+  }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+  }
+
+  .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-state p { font-size: 14px; }
+
+  /* ── REFRESH BUTTON ── */
+  .refresh-btn {
+    display: flex; align-items: center; gap: 6px;
+    background: none;
+    border: 1px solid var(--border-light);
+    border-radius: 7px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-family: 'Sarabun', sans-serif;
+    transition: all 0.15s;
+  }
+  .refresh-btn:hover { background: var(--bg-hover); color: #fff; border-color: var(--accent); }
+  .refresh-btn.spinning #refreshIcon { display: inline-block; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── LOADING OVERLAY ── */
+  .loading-overlay {
+    position: fixed; inset: 0;
+    background: var(--bg-primary);
+    z-index: 300;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 16px;
+    transition: opacity 0.4s;
+  }
+  .loading-overlay.hidden { opacity: 0; pointer-events: none; }
+  .loading-spinner {
+    width: 48px; height: 48px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  .loading-text { color: var(--text-secondary); font-size: 14px; }
+  .loading-sub { color: var(--text-muted); font-size: 12px; font-family: 'Space Mono', monospace; }
+
+  /* ── ERROR BANNER ── */
+  .error-banner {
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.3);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    display: flex; align-items: center; gap: 12px;
+    color: #fca5a5;
+    font-size: 13px;
+  }
+  .error-banner.hidden { display: none; }
+
+  /* ── LAST UPDATED ── */
+  .last-updated {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: 'Space Mono', monospace;
+    text-align: right;
+    margin-bottom: 8px;
+  }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg-primary); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    main { padding: 20px 16px; }
+    header { padding: 0 16px; }
+  }
+
+  /* ── CHART BAR ── */
+  .progress-bar-wrap {
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .progress-bar-bg {
+    flex: 1; height: 6px;
+    background: var(--bg-primary);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.5s ease;
+  }
+
+  .progress-bar-fill.green { background: var(--green); }
+  .progress-bar-fill.red { background: var(--red); }
+
+  .progress-pct {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--text-secondary);
+    min-width: 36px;
+    text-align: right;
+  }
+
+  /* Summary mini-bar below KPI */
+  .kpi-bar {
+    margin-top: 12px;
+  }
+
+  /* Shine animation on KPI cards */
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .kpi-card { animation: fadeInUp 0.4s ease both; }
+  .kpi-card:nth-child(2) { animation-delay: 0.05s; }
+  .kpi-card:nth-child(3) { animation-delay: 0.1s; }
+  .kpi-card:nth-child(4) { animation-delay: 0.15s; }
+
+  tbody tr { animation: fadeInUp 0.3s ease both; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-left">
+    <div class="logo-badge">🚛</div>
+    <div>
+      <div class="header-title">ศูนย์บริหารจัดการรถ — Inspection Dashboard</div>
+      <div class="header-sub">Vehicle Inspection Management System</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="live-badge">
+      <div class="live-dot"></div>
+      <span>LIVE</span>
+    </div>
+    <div class="date-badge" id="currentDate"></div>
+    <button class="refresh-btn" id="refreshBtn" onclick="fetchData(true)" title="โหลดข้อมูลใหม่">
+      <span id="refreshIcon">↻</span> รีเฟรช
+    </button>
+  </div>
+</header>
+
+<!-- LOADING OVERLAY -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">กำลังโหลดข้อมูลจาก Google Sheets...</div>
+  <div class="loading-sub" id="loadingStatus">กำลังเชื่อมต่อ Apps Script API</div>
+</div>
+
+<!-- MAIN -->
+<main>
+
+  <!-- ERROR BANNER -->
+  <div class="error-banner hidden" id="errorBanner">
+    <span style="font-size:20px;">⚠️</span>
+    <div>
+      <div style="font-weight:600;margin-bottom:2px;">ไม่สามารถโหลดข้อมูลจาก Google Sheets ได้</div>
+      <div id="errorMsg" style="color:var(--text-muted);"></div>
+    </div>
+  </div>
+
+  <!-- LAST UPDATED -->
+  <div class="last-updated" id="lastUpdated"></div>
+
+  <!-- KPI CARDS -->
+  <div class="kpi-grid" id="kpiGrid"></div>
+
+  <!-- CONTROLS -->
+  <div class="controls-bar">
+    <div class="search-box">
+      <span>🔍</span>
+      <input type="text" id="searchInput" placeholder="ค้นหาทะเบียน, ยี่ห้อ, แผนก, ผู้รับผิดชอบ...">
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">แผนก</span>
+      <select class="filter-select" id="deptFilter">
+        <option value="">ทั้งหมด</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">ประเภทรถ</span>
+      <select class="filter-select" id="vtypeFilter">
+        <option value="">ทั้งหมด</option>
+        <option value="รถทั่วไป">รถทั่วไป</option>
+        <option value="รถเครน/กระเช้า">รถเครน/กระเช้า</option>
+      </select>
+    </div>
+    <div class="filter-tabs" id="statusTabs">
+      <div class="filter-tab active" data-filter="all">ทั้งหมด</div>
+      <div class="filter-tab" data-filter="ok" data-active-class="green">✅ ปกติ</div>
+      <div class="filter-tab" data-filter="issues" data-active-class="red">⚠️ ผิดปกติ</div>
+      <div class="filter-tab" data-filter="overdue" data-active-class="orange">🕐 เกิน 30 วัน</div>
+      <div class="filter-tab" data-filter="none" data-active-class="gray">❌ ยังไม่ตรวจ</div>
+    </div>
+    <div class="results-count" id="resultsCount"></div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>ทะเบียนรถ</th>
+          <th>ยี่ห้อ / ประเภท</th>
+          <th>แผนก</th>
+          <th>ผู้รับผิดชอบ</th>
+          <th>สถานะ</th>
+          <th>ครั้งที่ตรวจ</th>
+          <th>ตรวจล่าสุด</th>
+          <th>ห่างจากวันนี้</th>
+          <th>รายการผิดปกติ</th>
+          <th>ประวัติ 10 ครั้งล่าสุด</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="vehicleTableBody"></tbody>
+    </table>
+    <div class="empty-state" id="emptyState" style="display:none;">
+      <div class="icon">🔍</div>
+      <p>ไม่พบรถที่ตรงกับเงื่อนไข</p>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  Vehicle Inspection Dashboard · ข้อมูลจาก การบริหารจัดการรถ.xlsx · สร้างโดย Claude AI
+</footer>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal" id="modalBox">
+    <div class="modal-header">
+      <div>
+        <div class="modal-plate" id="mPlate"></div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-top:3px;" id="mType"></div>
+      </div>
+      <button class="modal-close" onclick="closeModalBtn()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ── วางURL ของ Apps Script ตรงนี้หลัง Deploy แล้ว ──
+// ขั้นตอน: Extensions → Apps Script → Deploy → New Deployment → Web App → Anyone
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzYiDzFSKGtvVb5xOu8z4WK2n-sljky8CKtCVctm18zBbuUnEjJLO9EFCdlwD8KtiazZw/exec';
+
+// Auto-refresh ทุก 5 นาที (300000 ms) — ปรับได้ตามต้องการ
+const AUTO_REFRESH_INTERVAL = 5 * 60 * 1000;
+
+// ── DATA (จะถูกอัพเดทจาก API) ──
+let RAW = {"summary":{"total":38,"inspected":26,"notInspected":12,"hasIssues":14,"latestDate":"2569-04-18"},"vehicles":[{"id":1,"plate":"5 ขย 9607 กทม","type":"รถยนต์นั่งส่วนบุคคลไม่เกิน 7 คน","brand":"BYD","dept":"ผจก.","vtype":"รถทั่วไป","isCrane":false,"responsible":"นายจรูญ เดชจร","totalInspections":0,"lastDate":null,"lastDateStr":null,"daysSince":null,"lastInspector":null,"abnormalItems":[],"hasAbnormal":false,"history":[]},{"id":2,"plate":"3ขด5704 กทม.","type":"รถยนต์นั่งส่วนบุคคลไม่เกิน 7 คน","brand":"ISUZU","dept":"รจก.(ท.)","vtype":"รถทั่วไป","isCrane":false,"responsible":"นายธนู","totalInspections":4,"lastDate":"18 ก.พ. 2569","lastDateStr":"2569-02-18","daysSince":60,"lastInspector":"วนัสดา ผลไพบูลย์","abnormalItems":[],"hasAbnormal":false,"history":[{"date":"18 ก.พ. 2569","inspector":"วนัสดา ผลไพบูลย์","hasAbnormal":false},{"date":"16 ม.ค. 2569","inspector":"วนัสดา ผลไพบูลย์","hasAbnormal":true},{"date":"15 ม.ค. 2569","inspector":"ธราทิพย์","hasAbnormal":false},{"date":"14 ม.ค. 2569","inspector":"วนัสดา ผลไพบูลย์","hasAbnormal":false}]},{"id":3,"plate":"2 ขก 3127 กทม","type":"รถยนต์นั่งส่วนบุคคลไม่เกิน 7 คน","brand":"TOYOTA","dept":"รจก.(ล.) ผมต.","vtype":"รถทั่วไป","isCrane":false,"responsible":"-","totalInspections":18,"lastDate":"12 ก.พ. 2569","lastDateStr":"2569-02-12","daysSince":66,"lastInspector":"สุทธินัย","abnormalItems":[],"hasAbnormal":false,"history":[{"date":"12 ก.พ. 2569","inspector":"สุทธินัย","hasAbnormal":false},{"date":"10 ก.พ. 2569","inspector":"สุทธินัย","hasAbnormal":false},{"date":"9 ก.พ. 2569","inspector":"สุทธินัย","hasAbnormal":false},{"date":"3 ก.พ. 2569","inspector":"สุทธินัย","hasAbnormal":false},{"date":"2 ก.พ. 2569","inspector":"สุทธินัย","hasAbnormal":false},{"date":"28 ม.ค. 2569","inspector":"สุทธินัย","hasAbnormal":false},{"date":"27 ม.ค. 2569","inspector":"สุทธินัย","hasAbnormal":false},{"date":"26 ม.ค. 2569","inspector":"สุทธินัย","hasAbnormal":false},{"date":"23 ม.ค. 2569","inspector":"สุทธินัย","hasAbnormal":false},{"date":"22 ม.ค. 2569","inspector":"สุทธินัย","hasAbnormal":false}]},{"id":4,"plate":"86-2573 ชบ","type":"รถบรรทุก 3 ตัน","brand":"ISUZU","dept":"ผกส.","vtype":"รถทั่วไป","isCrane":false,"responsible":"นายขวัญชัย พันธุ์เกตุ","totalInspections":8,"lastDate":"10 เม.ย. 2569","lastDateStr":"2569-04-10","daysSince":9,"lastInspector":"นายจิรวัฒน์ มีพยุง","abnormalItems":["อุปกรณ์ดับเพลิง"],"hasAbnormal":true,"history":[{"date":"10 เม.ย. 2569","inspector":"นายจิรวัฒน์ มีพยุง","hasAbnormal":true},{"date":"8 เม.ย. 2569","inspector":"นายจิรวัฒน์ มีพยุง","hasAbnormal":true},{"date":"18 มี.ค. 2569","inspector":"นายจิรวัฒน์ มีพยุง","hasAbnormal":true},{"date":"17 มี.ค. 2569","inspector":"นายจีรวัฒน์ มีพยุง","hasAbnormal":true},{"date":"23 ม.ค. 2569","inspector":"นายขวัญชัย พันธ์เกตะ","hasAbnormal":false},{"date":"22 ม.ค. 2569","inspector":"นายขวัญชัย พันธ์เกตุ","hasAbnormal":false},{"date":"21 ม.ค. 2569","inspector":"นายขวัญชัย พันธ์เกตุ","hasAbnormal":false},{"date":"16 ม.ค. 2569","inspector":"จิรวัฒน์","hasAbnormal":true}]},{"id":5,"plate":"82-6139 ชบ","type":"รถบรรทุก 6 ตัน","brand":"HINO","dept":"ผมต.","vtype":"รถทั่วไป","isCrane":false,"responsible":"-","totalInspections":0,"lastDate":null,"lastDateStr":null,"daysSince":null,"lastInspector":null,"abnormalItems":[],"hasAbnormal":false,"history":[]},{"id":6,"plate":"83-4170 ชบ","type":"รถบรรทุกติดเครน","brand":"ISUZU","dept":"ผกส.","vtype":"รถเครน/กระเช้า","isCrane":true,"responsible":"นายจิรวัฒน์ มีพยุง","totalInspections":8,"lastDate":"11 เม.ย. 2569","lastDateStr":"2569-04-11","daysSince":8,"lastInspector":"นายจิรวัฒน์ มีพยุง","abnormalItems":["ลวดสลิง (แตก, การม้วนเก็บ)"],"hasAbnormal":true,"history":[{"date":"11 เม.ย. 2569","inspector":"นายจิรวัฒน์ มีพยุง","hasAbnormal":true},{"date":"9 เม.ย. 2569","inspector":"นายจิรวัฒน์ มีพยุง","hasAbnormal":true},{"date":"19 มี.ค. 2569","inspector":"นายจิรวัฒน์ มีพยุง","hasAbnormal":true},{"date":"18 มี.ค. 2569","inspector":"นายจิรวัฒน์ มีพยุง","hasAbnormal":true},{"date":"24 ม.ค. 2569","inspector":"นายจิรวัฒน์ มีพยุง","hasAbnormal":false},{"date":"23 ม.ค. 2569","inspector":"นายจิรวัฒน์ มีพยุง","hasAbnormal":false},{"date":"22 ม.ค. 2569","inspector":"นายจิรวัฒน์ มีพยุง","hasAbnormal":false},{"date":"16 ม.ค. 2569","inspector":"จิรวัฒน์","hasAbnormal":true}]},{"id":7,"plate":"82-7781 ชบ","type":"รถบรรทุกติดเครน","brand":"ISUZU","dept":"ผกส.","vtype":"รถเครน/กระเช้า","isCrane":true,"responsible":"นายจิรวัฒน์ มีพยุง","totalInspections":0,"lastDate":null,"lastDateStr":null,"daysSince":null,"lastInspector":null,"abnormalItems":[],"hasAbnormal":false,"history":[]},{"id":8,"plate":"ยง 7181 ชบ","type":"รถบรรทุก 2 ตัน","brand":"TOYOTA","dept":"ผกส.","vtype":"รถทั่วไป","isCrane":false,"responsible":"นายจิรวัฒน์ มีพยุง","totalInspections":2,"lastDate":"18 เม.ย. 2569","lastDateStr":"2569-04-18","daysSince":1,"lastInspector":"นายจิรวัฒน์ มีพยุง","abnormalItems":["อุปกรณ์ดับเพลิง","แบตเตอรี่ (ขั้ว, น้ำกลั่น)"],"hasAbnormal":true,"history":[{"date":"18 เม.ย. 2569","inspector":"นายจิรวัฒน์ มีพยุง","hasAbnormal":true},{"date":"16 เม.ย. 2569","inspector":"นายจิรวัฒน์ มีพยุง","hasAbnormal":true}]},{"id":9,"plate":"82-9322 ชบ","type":"รถบรรทุก 6 ตัน","brand":"MITSUBISHI","dept":"ผมต.หม้อแปลง","vtype":"รถทั่วไป","isCrane":false,"responsible":"-","totalInspections":6,"lastDate":"8 เม.ย. 2569","lastDateStr":"2569-04-08","daysSince":11,"lastInspector":"สิทธิชัย","abnormalItems":["อุปกรณ์ดับเพลิง","แบตเตอรี่ (ขั้ว, น้ำกลั่น)"],"hasAbnormal":true,"history":[{"date":"8 เม.ย. 2569","inspector":"สิทธิชัย","hasAbnormal":true},{"date":"7 เม.ย. 2569","inspector":"สิทธิชัย","hasAbnormal":true},{"date":"20 มี.ค. 2569","inspector":"สิทธิชัย","hasAbnormal":true},{"date":"19 มี.ค. 2569","inspector":"สิทธิชัย","hasAbnormal":true},{"date":"13 ม.ค. 2569","inspector":"สิทธิชัย","hasAbnormal":false},{"date":"13 ม.ค. 2569","inspector":"สิทธิชัย","hasAbnormal":false}]},{"id":10,"plate":"7ขฆ3714 กทม.","type":"รถยนต์นั่งส่วนบุคคลไม่เกิน 7 คน","brand":"TOYOTA","dept":"ผกส.","vtype":"รถทั่วไป","isCrane":false,"responsible":"นางสาววนัสดา ผลไพบูลย์","totalInspections":6,"lastDate":"7 เม.ย. 2569","lastDateStr":"2569-04-07","daysSince":12,"lastInspector":"นางสาววนัสดา ผลไพบูลย์","abnormalItems":["เครื่องปรับอากาศ"],"hasAbnormal":true,"history":[{"date":"7 เม.ย. 2569","inspector":"นางสาววนัสดา ผลไพบูลย์","hasAbnormal":true},{"date":"3 เม.ย. 2569","inspector":"นางสาววนัสดา ผลไพบูลย์","hasAbnormal":true},{"date":"24 มี.ค. 2569","inspector":"นางสาววนัสดา ผลไพบูลย์","hasAbnormal":false},{"date":"21 มี.ค. 2569","inspector":"นางสาววนัสดา ผลไพบูลย์","hasAbnormal":false},{"date":"21 ม.ค. 2569","inspector":"วนัสดา ผลไพบูลย์","hasAbnormal":false},{"date":"20 ม.ค. 2569","inspector":"วนัสดา ผลไพบูลย์","hasAbnormal":false}]},{"id":11,"plate":"87-2053 ชบ.","type":"รถแก้ไฟมีตู้เก็บเครื่องมือ","brand":"HINO","dept":"ผปบ.","vtype":"รถทั่วไป","isCrane":false,"responsible":"-","totalInspections":9,"lastDate":"17 เม.ย. 2569","lastDateStr":"2569-04-17","daysSince":2,"lastInspector":"ไชยวัฒน์","abnormalItems":["อุปกรณ์ดับเพลิง"],"hasAbnormal":true,"history":[{"date":"17 เม.ย. 2569","inspector":"ไชยวัฒน์","hasAbnormal":true},{"date":"16 เม.ย. 2569","inspector":"ไชยวัฒน์","hasAbnormal":true},{"date":"10 เม.ย. 2569","inspector":"ไชยวัฒน์","hasAbnormal":true},{"date":"9 เม.ย. 2569","inspector":"ไชยวัฒน์","hasAbnormal":true},{"date":"8 เม.ย. 2569","inspector":"ไชยวัฒน์","hasAbnormal":false},{"date":"26 มี.ค. 2569","inspector":"ไชยวัฒน์","hasAbnormal":false},{"date":"25 มี.ค. 2569","inspector":"ไชยวัฒน์","hasAbnormal":false},{"date":"24 มี.ค. 2569","inspector":"ไชยวัฒน์","hasAbnormal":false},{"date":"19 มี.ค. 2569","inspector":"ไชยวัฒน์","hasAbnormal":false}]},{"id":12,"plate":"85-2756 ชบ","type":"รถบรรทุก 2 ตัน","brand":"ISUZU","dept":"ผปบ.","vtype":"รถทั่วไป","isCrane":false,"responsible":"-","totalInspections":8,"lastDate":"16 เม.ย. 2569","lastDateStr":"2569-04-16","daysSince":3,"lastInspector":"ไชยวัฒน์","abnormalItems":[],"hasAbnormal":false,"history":[{"date":"16 เม.ย. 2569","inspector":"ไชยวัฒน์","hasAbnormal":false},{"date":"10 เม.ย. 2569","inspector":"ไชยวัฒน์","hasAbnormal":false},{"date":"9 เม.ย. 2569","inspector":"ไชยวัฒน์","hasAbnormal":false},{"date":"8 เม.ย. 2569","inspector":"ไชยวัฒน์","hasAbnormal":false},{"date":"27 มี.ค. 2569","inspector":"ไชยวัฒน์","hasAbnormal":false},{"date":"26 มี.ค. 2569","inspector":"ไชยวัฒน์","hasAbnormal":false},{"date":"25 มี.ค. 2569","inspector":"ไชยวัฒน์","hasAbnormal":false},{"date":"24 มี.ค. 2569","inspector":"ไชยวัฒน์","hasAbnormal":false}]},{"id":13,"plate":"84-0382 ชบ","type":"รถกระเช้าแก้ไฟ","brand":"MITSUBISHI","dept":"ผปบ.","vtype":"รถเครน/กระเช้า","isCrane":true,"responsible":"-","totalInspections":0,"lastDate":null,"lastDateStr":null,"daysSince":null,"lastInspector":null,"abnormalItems":[],"hasAbnormal":false,"history":[]},{"id":14,"plate":"86-7543 ชบ","type":"รถสว่านขุดเจาะ","brand":"SCANIA","dept":"ผปบ.","vtype":"รถเครน/กระเช้า","isCrane":true,"responsible":"-","totalInspections":6,"lastDate":"16 เม.ย. 2569","lastDateStr":"2569-04-16","daysSince":3,"lastInspector":"ไชยวัฒน์","abnormalItems":["สายไฮดรอลิค (บวม, แตก)","น้ำมันไฮดรอลิค (สภาพ, ระดับ)"],"hasAbnormal":true,"history":[{"date":"16 เม.ย. 2569","inspector":"ไชยวัฒน์","hasAbnormal":true},{"date":"10 เม.ย. 2569","inspector":"ไชยวัฒน์","hasAbnormal":true},{"date":"9 เม.ย. 2569","inspector":"ไชยวัฒน์","hasAbnormal":true},{"date":"8 เม.ย. 2569","inspector":"ไชยวัฒน์","hasAbnormal":true},{"date":"25 มี.ค. 2569","inspector":"ไชยวัฒน์","hasAbnormal":false},{"date":"24 มี.ค. 2569","inspector":"ไชยวัฒน์","hasAbnormal":false}]},{"id":15,"plate":"86-8144 ชบ","type":"รถบรรทุกติดเครน","brand":"UD TRUCKS","dept":"ผปบ.","vtype":"รถเครน/กระเช้า","isCrane":true,"responsible":"-","totalInspections":6,"lastDate":"16 เม.ย. 2569","lastDateStr":"2569-04-16","daysSince":3,"lastInspector":"ไชยวัฒน์","abnormalItems":["สายไฮดรอลิค (บวม, แตก)","น้ำมันไฮดรอลิค (สภาพ, ระดับ)"],"hasAbnormal":true,"history":[{"date":"16 เม.ย. 2569","inspector":"ไชยวัฒน์","hasAbnormal":true},{"date":"10 เม.ย. 2569","inspector":"ไชยวัฒน์","hasAbnormal":true},{"date":"9 เม.ย. 2569","inspector":"ไชยวัฒน์","hasAbnormal":true},{"date":"8 เม.ย. 2569","inspector":"ไชยวัฒน์","hasAbnormal":true},{"date":"25 มี.ค. 2569","inspector":"ไชยวัฒน์","hasAbnormal":false},{"date":"24 มี.ค. 2569","inspector":"ไชยวัฒน์","hasAbnormal":false}]},{"id":16,"plate":"5ขฌ-4310 กทม","type":"รถยนต์นั่งส่วนบุคคลไม่เกิน 7 คน","brand":"TOYOTA","dept":"ผปบ.","vtype":"รถทั่วไป","isCrane":false,"responsible":"-","totalInspections":11,"lastDate":"3 เม.ย. 2569","lastDateStr":"2569-04-03","daysSince":16,"lastInspector":"รติวรรณ พวงเงิน","abnormalItems":[],"hasAbnormal":false,"history":[{"date":"3 เม.ย. 2569","inspector":"รติวรรณ พวงเงิน","hasAbnormal":false},{"date":"2 เม.ย. 2569","inspector":"รติวรรณ พวงเงิน","hasAbnormal":false},{"date":"1 เม.ย. 2569","inspector":"รติวรรณ พวงเงิน","hasAbnormal":false},{"date":"31 มี.ค. 2569","inspector":"รติวรรณ พวงเงิน","hasAbnormal":false},{"date":"28 มี.ค. 2569","inspector":"รติวรรณ พวงเงิน","hasAbnormal":false},{"date":"27 มี.ค. 2569","inspector":"รติวรรณ พวงเงิน","hasAbnormal":false},{"date":"26 มี.ค. 2569","inspector":"รติวรรณ พวงเงิน","hasAbnormal":false},{"date":"25 มี.ค. 2569","inspector":"รติวรรณ พวงเงิน","hasAbnormal":false},{"date":"19 มี.ค. 2569","inspector":"รติวรรณ พวงเงิน","hasAbnormal":false},{"date":"18 มี.ค. 2569","inspector":"รติวรรณ พวงเงิน","hasAbnormal":false}]},{"id":17,"plate":"นค-3950 ชบ","type":"ตู้โดยสาร 12-15 ที่นั่ง","brand":"TOYOTA","dept":"ผปบ.","vtype":"รถทั่วไป","isCrane":false,"responsible":"-","totalInspections":0,"lastDate":null,"lastDateStr":null,"daysSince":null,"lastInspector":null,"abnormalItems":[],"hasAbnormal":false,"history":[]},{"id":18,"plate":"3 กถ 4510 ชบ","type":"รถจักรยายนยนต์","brand":"SUZUKI","dept":"ผปบ.","vtype":"รถทั่วไป","isCrane":false,"responsible":"-","totalInspections":0,"lastDate":null,"lastDateStr":null,"daysSince":null,"lastInspector":null,"abnormalItems":[],"hasAbnormal":false,"history":[]},{"id":19,"plate":"3ฒง 8970 กทม","type":"รถบรรทุกส่วนบุคคล 1129","brand":"ISUZU","dept":"ผปบ.","vtype":"รถทั่วไป","isCrane":false,"responsible":"-","totalInspections":11,"lastDate":"2 เม.ย. 2569","lastDateStr":"2569-04-02","daysSince":17,"lastInspector":"รติวรรณ พวงเงิน","abnormalItems":[],"hasAbnormal":false,"history":[{"date":"2 เม.ย. 2569","inspector":"รติวรรณ พวงเงิน","hasAbnormal":false},{"date":"1 เม.ย. 2569","inspector":"รติวรรณ พวงเงิน","hasAbnormal":false},{"date":"31 มี.ค. 2569","inspector":"รติวรรณ พวงเงิน","hasAbnormal":false},{"date":"29 มี.ค. 2569","inspector":"รติวรรณ พวงเงิน","hasAbnormal":false},{"date":"28 มี.ค. 2569","inspector":"รติวรรณ พวงเงิน","hasAbnormal":false},{"date":"26 มี.ค. 2569","inspector":"รติวรรณ พวงเงิน","hasAbnormal":false},{"date":"25 มี.ค. 2569","inspector":"รติวรรณ พวงเงิน","hasAbnormal":false},{"date":"20 มี.ค. 2569","inspector":"รติวรรณ พวงเงิน","hasAbnormal":false},{"date":"19 มี.ค. 2569","inspector":"รติวรรณ พวงเงิน","hasAbnormal":false},{"date":"17 มี.ค. 2569","inspector":"รติวรรณ พวงเงิน","hasAbnormal":false}]},{"id":20,"plate":"87-0297 ชบ","type":"รถบรรทุก 3 ตัน แก้ไฟ","brand":"ISUZU","dept":"ผปบ.","vtype":"รถทั่วไป","isCrane":false,"responsible":"-","totalInspections":9,"lastDate":"17 เม.ย. 2569","lastDateStr":"2569-04-17","daysSince":2,"lastInspector":"ไชยวัฒน์","abnormalItems":["ระดับน้ำมันเชื้อเพลิง","อุปกรณ์ดับเพลิง","แบตเตอรี่ (ขั้ว, น้ำกลั่น)"],"hasAbnormal":true,"history":[{"date":"17 เม.ย. 2569","inspector":"ไชยวัฒน์","hasAbnormal":true},{"date":"16 เม.ย. 2569","inspector":"ไชยวัฒน์","hasAbnormal":true},{"date":"10 เม.ย. 2569","inspector":"ไชยวัฒน์","hasAbnormal":true},{"date":"9 เม.ย. 2569","inspector":"ไชยวัฒน์","hasAbnormal":true},{"date":"8 เม.ย. 2569","inspector":"ไชยวัฒน์","hasAbnormal":true},{"date":"26 มี.ค. 2569","inspector":"ไชยวัฒน์","hasAbnormal":false},{"date":"25 มี.ค. 2569","inspector":"ไชยวัฒน์","hasAbnormal":false},{"date":"24 มี.ค. 2569","inspector":"ไชยวัฒน์","hasAbnormal":false},{"date":"19 มี.ค. 2569","inspector":"ไชยวัฒน์","hasAbnormal":false}]},{"id":21,"plate":"87-2052 ชบ.","type":"รถกระเช้าแก้ไฟ","brand":"HINO","dept":"ผปบ.","vtype":"รถเครน/กระเช้า","isCrane":true,"responsible":"-","totalInspections":4,"lastDate":"18 เม.ย. 2569","lastDateStr":"2569-04-18","daysSince":1,"lastInspector":"ไชยวัฒน์","abnormalItems":["น้ำมันไฮดรอลิค (สภาพ, ระดับ)"],"hasAbnormal":true,"history":[{"date":"18 เม.ย. 2569","inspector":"ไชยวัฒน์","hasAbnormal":true},{"date":"17 เม.ย. 2569","inspector":"ไชยวัฒน์","hasAbnormal":true},{"date":"11 เม.ย. 2569","inspector":"ไชยวัฒน์","hasAbnormal":true},{"date":"10 เม.ย. 2569","inspector":"ไชยวัฒน์","hasAbnormal":true}]},{"id":22,"plate":"87-2051 ชบ.","type":"รถกระเช้าฮอทไลน์","brand":"HINO","dept":"ผปบ.","vtype":"รถเครน/กระเช้า","isCrane":true,"responsible":"-","totalInspections":4,"lastDate":"18 เม.ย. 2569","lastDateStr":"2569-04-18","daysSince":1,"lastInspector":"ไชยวัฒน์","abnormalItems":[],"hasAbnormal":false,"history":[{"date":"18 เม.ย. 2569","inspector":"ไชยวัฒน์","hasAbnormal":false},{"date":"17 เม.ย. 2569","inspector":"ไชยวัฒน์","hasAbnormal":false},{"date":"11 เม.ย. 2569","inspector":"ไชยวัฒน์","hasAbnormal":false},{"date":"10 เม.ย. 2569","inspector":"ไชยวัฒน์","hasAbnormal":false}]},{"id":23,"plate":"87-4346 ชบ.","type":"รถกระเช้าแก้ไฟ(ใหม่)","brand":"HINO","dept":"ผปบ.","vtype":"รถเครน/กระเช้า","isCrane":true,"responsible":"-","totalInspections":0,"lastDate":null,"lastDateStr":null,"daysSince":null,"lastInspector":null,"abnormalItems":[],"hasAbnormal":false,"history":[]},{"id":24,"plate":"85-2753 ชบ","type":"รถบรรทุก 2 ตัน","brand":"ISUZU","dept":"ผมต.หม้อแปลง","vtype":"รถทั่วไป","isCrane":false,"responsible":"-","totalInspections":6,"lastDate":"8 เม.ย. 2569","lastDateStr":"2569-04-08","daysSince":11,"lastInspector":"สิทธิชัย","abnormalItems":["อุปกรณ์ดับเพลิง","แบตเตอรี่ (ขั้ว, น้ำกลั่น)"],"hasAbnormal":true,"history":[{"date":"8 เม.ย. 2569","inspector":"สิทธิชัย","hasAbnormal":true},{"date":"7 เม.ย. 2569","inspector":"สิทธิชัย","hasAbnormal":true},{"date":"21 มี.ค. 2569","inspector":"สิทธิชัย","hasAbnormal":true},{"date":"20 มี.ค. 2569","inspector":"สิทธิชัย","hasAbnormal":true},{"date":"14 ม.ค. 2569","inspector":"สิทธิชัย","hasAbnormal":false},{"date":"13 ม.ค. 2569","inspector":"สิทธิชัย","hasAbnormal":false}]},{"id":25,"plate":"82-7780 ชบ","type":"รถบรรทุกติดเครน 4 ตัน","brand":"ISUZU","dept":"ผมต.หม้อแปลง","vtype":"รถเครน/กระเช้า","isCrane":true,"responsible":"-","totalInspections":6,"lastDate":"8 เม.ย. 2569","lastDateStr":"2569-04-08","daysSince":11,"lastInspector":"สิทธิชัย","abnormalItems":["สายไฮดรอลิค (บวม, แตก)","น้ำมันไฮดรอลิค (สภาพ, ระดับ)"],"hasAbnormal":true,"history":[{"date":"8 เม.ย. 2569","inspector":"สิทธิชัย","hasAbnormal":true},{"date":"7 เม.ย. 2569","inspector":"สิทธิชัย","hasAbnormal":true},{"date":"21 มี.ค. 2569","inspector":"สิทธิชัย","hasAbnormal":true},{"date":"20 มี.ค. 2569","inspector":"สิทธิชัย","hasAbnormal":true},{"date":"14 ม.ค. 2569","inspector":"สิทธิชัย","hasAbnormal":false},{"date":"13 ม.ค. 2569","inspector":"สิทธิชัย","hasAbnormal":false}]},{"id":26,"plate":"นค 4792 ชบ","type":"รถตู้นั่งสี่ตอน","brand":"TOYOTA","dept":"ผมต.หม้อแปลง","vtype":"รถทั่วไป","isCrane":false,"responsible":"-","totalInspections":6,"lastDate":"8 เม.ย. 2569","lastDateStr":"2569-04-08","daysSince":11,"lastInspector":"สิทธิชัย","abnormalItems":["ไฟส่องสว่าง (สูง-ต่ำ) หน้า-หลัง","อุปกรณ์ดับเพลิง","แบตเตอรี่ (ขั้ว, น้ำกลั่น)"],"hasAbnormal":true,"history":[{"date":"8 เม.ย. 2569","inspector":"สิทธิชัย","hasAbnormal":true},{"date":"7 เม.ย. 2569","inspector":"สิทธิชัย","hasAbnormal":true},{"date":"21 มี.ค. 2569","inspector":"สิทธิชัย","hasAbnormal":true},{"date":"20 มี.ค. 2569","inspector":"สิทธิชัย","hasAbnormal":true},{"date":"14 ม.ค. 2569","inspector":"สิทธิชัย","hasAbnormal":false},{"date":"13 ม.ค. 2569","inspector":"สิทธิชัย","hasAbnormal":false}]},{"id":27,"plate":"5 ขษ 1604 กทม.","type":"รถยนต์นั่งส่วนบุคคลไม่เกิน 7 คน","brand":"TOYOTA","dept":"ผบร.","vtype":"รถทั่วไป","isCrane":false,"responsible":"-","totalInspections":15,"lastDate":"12 ก.พ. 2569","lastDateStr":"2569-02-12","daysSince":66,"lastInspector":"ธีรพันธ์","abnormalItems":["สภาพยาง กระทะล้อ และน๊อตยึดล้อ"],"hasAbnormal":true,"history":[{"date":"12 ก.พ. 2569","inspector":"ธีรพันธ์","hasAbnormal":true},{"date":"10 ก.พ. 2569","inspector":"ธีรพันธ์","hasAbnormal":true},{"date":"9 ก.พ. 2569","inspector":"ธีรพันธ์","hasAbnormal":true},{"date":"5 ก.พ. 2569","inspector":"ธีรพันธ์","hasAbnormal":false},{"date":"4 ก.พ. 2569","inspector":"ธีรพันธ์","hasAbnormal":false},{"date":"3 ก.พ. 2569","inspector":"ธีรพันธ์","hasAbnormal":false},{"date":"2 ก.พ. 2569","inspector":"ธีรพันธ์","hasAbnormal":false},{"date":"22 ม.ค. 2569","inspector":"ธีรพันธ์","hasAbnormal":false},{"date":"20 ม.ค. 2569","inspector":"ธีรพันธ์","hasAbnormal":false},{"date":"16 ม.ค. 2569","inspector":"ธีรพันธ์","hasAbnormal":false}]},{"id":28,"plate":"3 ขด 5440 กทม.","type":"รถยนต์นั่งส่วนบุคคลไม่เกิน 7 คน","brand":"ISUZU","dept":"ผมต.","vtype":"รถทั่วไป","isCrane":false,"responsible":"-","totalInspections":18,"lastDate":"12 ก.พ. 2569","lastDateStr":"2569-02-12","daysSince":66,"lastInspector":"ฐิติกร","abnormalItems":[],"hasAbnormal":false,"history":[{"date":"12 ก.พ. 2569","inspector":"ฐิติกร","hasAbnormal":false},{"date":"10 ก.พ. 2569","inspector":"ฐิติกร","hasAbnormal":false},{"date":"9 ก.พ. 2569","inspector":"ฐิติกร","hasAbnormal":false},{"date":"5 ก.พ. 2569","inspector":"ฐิติกร","hasAbnormal":false},{"date":"4 ก.พ. 2569","inspector":"ฐิติกร","hasAbnormal":false},{"date":"3 ก.พ. 2569","inspector":"ฐิติกร","hasAbnormal":false},{"date":"2 ก.พ. 2569","inspector":"ฐิติกร","hasAbnormal":false},{"date":"29 ม.ค. 2569","inspector":"ฐิติกร","hasAbnormal":false},{"date":"28 ม.ค. 2569","inspector":"ฐิติกร","hasAbnormal":false},{"date":"27 ม.ค. 2569","inspector":"ฐิติกร","hasAbnormal":false}]},{"id":29,"plate":"3 ขด 5719 กทม.","type":"รถยนต์นั่งส่วนบุคคลไม่เกิน 7 คน","brand":"ISUZU","dept":"ผมต.","vtype":"รถทั่วไป","isCrane":false,"responsible":"-","totalInspections":18,"lastDate":"12 ก.พ. 2569","lastDateStr":"2569-02-12","daysSince":66,"lastInspector":"ณัฐนันท์","abnormalItems":[],"hasAbnormal":false,"history":[{"date":"12 ก.พ. 2569","inspector":"ณัฐนันท์","hasAbnormal":false},{"date":"10 ก.พ. 2569","inspector":"ณัฐนันท์","hasAbnormal":false},{"date":"9 ก.พ. 2569","inspector":"ณัฐนันท์","hasAbnormal":false},{"date":"5 ก.พ. 2569","inspector":"ณัฐนันท์","hasAbnormal":false},{"date":"4 ก.พ. 2569","inspector":"ณัฐนันท์","hasAbnormal":false},{"date":"3 ก.พ. 2569","inspector":"ณัฐนันท์","hasAbnormal":false},{"date":"2 ก.พ. 2569","inspector":"ณัฐนันท์","hasAbnormal":false},{"date":"29 ม.ค. 2569","inspector":"ณัฐนันท์","hasAbnormal":false},{"date":"28 ม.ค. 2569","inspector":"ณัฐนันท์","hasAbnormal":false},{"date":"27 ม.ค. 2569","inspector":"ณัฐนันท์","hasAbnormal":false}]},{"id":30,"plate":"3 กถ 4511 ชบ","type":"รถจักรยายนยนต์","brand":"SUZUKI","dept":"ผมต.","vtype":"รถทั่วไป","isCrane":false,"responsible":"-","totalInspections":11,"lastDate":"28 มี.ค. 2569","lastDateStr":"2569-03-28","daysSince":22,"lastInspector":"ณัฐวุฒิ","abnormalItems":[],"hasAbnormal":false,"history":[{"date":"28 มี.ค. 2569","inspector":"ณัฐวุฒิ","hasAbnormal":false},{"date":"27 มี.ค. 2569","inspector":"ณัฐวุฒิ","hasAbnormal":false},{"date":"26 มี.ค. 2569","inspector":"ณัฐวุฒิ","hasAbnormal":false},{"date":"25 มี.ค. 2569","inspector":"ณัฐวุฒิ","hasAbnormal":false},{"date":"24 มี.ค. 2569","inspector":"ณัฐวุฒิ","hasAbnormal":false},{"date":"23 มี.ค. 2569","inspector":"ณัฐวุฒิ","hasAbnormal":false},{"date":"6 มี.ค. 2569","inspector":"ณัฐวุฒิ","hasAbnormal":false},{"date":"5 มี.ค. 2569","inspector":"ณัฐวุฒิ","hasAbnormal":false},{"date":"4 มี.ค. 2569","inspector":"ณัฐวุฒิ","hasAbnormal":false},{"date":"3 มี.ค. 2569","inspector":"ณัฐวุฒิ","hasAbnormal":false}]},{"id":31,"plate":"3กถ 4512 ชบ","type":"รถจักรยายนยนต์","brand":"SUZUKI","dept":"ผมต.","vtype":"รถทั่วไป","isCrane":false,"responsible":"-","totalInspections":11,"lastDate":"28 มี.ค. 2569","lastDateStr":"2569-03-28","daysSince":22,"lastInspector":"ณัฐวุฒิ","abnormalItems":[],"hasAbnormal":false,"history":[{"date":"28 มี.ค. 2569","inspector":"ณัฐวุฒิ","hasAbnormal":false},{"date":"27 มี.ค. 2569","inspector":"ณัฐวุฒิ","hasAbnormal":false},{"date":"26 มี.ค. 2569","inspector":"ณัฐวุฒิ","hasAbnormal":false},{"date":"25 มี.ค. 2569","inspector":"ณัฐวุฒิ","hasAbnormal":false},{"date":"24 มี.ค. 2569","inspector":"ณัฐวุฒิ","hasAbnormal":false},{"date":"23 มี.ค. 2569","inspector":"ณัฐวุฒิ","hasAbnormal":false},{"date":"6 มี.ค. 2569","inspector":"ณัฐวุฒิ","hasAbnormal":false},{"date":"5 มี.ค. 2569","inspector":"ณัฐวุฒิ","hasAbnormal":false},{"date":"4 มี.ค. 2569","inspector":"ณัฐวุฒิ","hasAbnormal":false},{"date":"3 มี.ค. 2569","inspector":"ณัฐวุฒิ","hasAbnormal":false}]},{"id":32,"plate":"ย 6368 ชบ","type":"รถตู้นั่ง","brand":"TOYOTA","dept":"ผมต.","vtype":"รถทั่วไป","isCrane":false,"responsible":"-","totalInspections":0,"lastDate":null,"lastDateStr":null,"daysSince":null,"lastInspector":null,"abnormalItems":[],"hasAbnormal":false,"history":[]},{"id":33,"plate":"กบ 2730 ชบ","type":"รถกระบะ 4 ประตู","brand":"FORD","dept":"ผคพ.","vtype":"รถทั่วไป","isCrane":false,"responsible":"-","totalInspections":0,"lastDate":null,"lastDateStr":null,"daysSince":null,"lastInspector":null,"abnormalItems":[],"hasAbnormal":false,"history":[]},{"id":34,"plate":"86-2006 ชบ","type":"รถบรรทุก 6 ตัน","brand":"ISUZU","dept":"ผคพ.","vtype":"รถทั่วไป","isCrane":false,"responsible":"-","totalInspections":0,"lastDate":null,"lastDateStr":null,"daysSince":null,"lastInspector":null,"abnormalItems":[],"hasAbnormal":false,"history":[]},{"id":35,"plate":"ยข 3298 ชบ","type":"รถบรรทุก 1 ตัน 2 ประตู","brand":"SUZUKI","dept":"เกาะล้าน","vtype":"รถทั่วไป","isCrane":false,"responsible":"-","totalInspections":8,"lastDate":"18 เม.ย. 2569","lastDateStr":"2569-04-18","daysSince":1,"lastInspector":"พลชัย","abnormalItems":[],"hasAbnormal":false,"history":[{"date":"18 เม.ย. 2569","inspector":"พลชัย","hasAbnormal":false},{"date":"17 เม.ย. 2569","inspector":"พลชัย","hasAbnormal":false},{"date":"16 เม.ย. 2569","inspector":"พลชัย","hasAbnormal":false},{"date":"11 เม.ย. 2569","inspector":"พลชัย","hasAbnormal":false},{"date":"10 เม.ย. 2569","inspector":"พลชัย","hasAbnormal":false},{"date":"9 เม.ย. 2569","inspector":"พลชัย","hasAbnormal":false},{"date":"8 เม.ย. 2569","inspector":"พลชัย","hasAbnormal":false},{"date":"7 เม.ย. 2569","inspector":"พลชัย","hasAbnormal":false}]},{"id":36,"plate":"3 กถ 4509 ชบ","type":"รถจักรยายนยนต์","brand":"SUZUKI","dept":"เกาะล้าน","vtype":"รถทั่วไป","isCrane":false,"responsible":"-","totalInspections":8,"lastDate":"18 เม.ย. 2569","lastDateStr":"2569-04-18","daysSince":1,"lastInspector":"พลชัย","abnormalItems":[],"hasAbnormal":false,"history":[{"date":"18 เม.ย. 2569","inspector":"พลชัย","hasAbnormal":false},{"date":"17 เม.ย. 2569","inspector":"พลชัย","hasAbnormal":false},{"date":"16 เม.ย. 2569","inspector":"พลชัย","hasAbnormal":false},{"date":"11 เม.ย. 2569","inspector":"พลชัย","hasAbnormal":false},{"date":"10 เม.ย. 2569","inspector":"พลชัย","hasAbnormal":false},{"date":"9 เม.ย. 2569","inspector":"พลชัย","hasAbnormal":false},{"date":"8 เม.ย. 2569","inspector":"พลชัย","hasAbnormal":false},{"date":"7 เม.ย. 2569","inspector":"พลชัย","hasAbnormal":false}]},{"id":37,"plate":"ง 1708 ชบ","type":"รถแวนตรวจการณ์","brand":"ISUZU","dept":"ผบร.","vtype":"รถทั่วไป","isCrane":false,"responsible":"-","totalInspections":0,"lastDate":null,"lastDateStr":null,"daysSince":null,"lastInspector":null,"abnormalItems":[],"hasAbnormal":false,"history":[]},{"id":38,"plate":"1นง-5120 กทม.","type":"รถตู้ 7 ที่นั้ง ( ส่วนกลาง )","brand":"TOYOTA","dept":"ผบส.","vtype":"รถทั่วไป","isCrane":false,"responsible":"-","totalInspections":0,"lastDate":null,"lastDateStr":null,"daysSince":null,"lastInspector":null,"abnormalItems":[],"hasAbnormal":false,"history":[]}]};
+
+// ── STATE ──
+let currentFilter = 'all';
+let searchTerm = '';
+let deptFilter = '';
+let vtypeFilter = '';
+let autoRefreshTimer = null;
+
+// ── INIT ──
+document.addEventListener('DOMContentLoaded', () => {
+  setupListeners();
+  fetchData(false);           // โหลดข้อมูล live ครั้งแรก
+  startAutoRefresh();
+});
+
+// ── FETCH DATA FROM APPS SCRIPT ──────────────────────────────
+async function fetchData(isManual = false) {
+  // ถ้ายังไม่ได้ตั้งค่า URL → แสดง fallback data
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') {
+    console.warn('⚠️ APPS_SCRIPT_URL ยังไม่ได้ตั้งค่า — ใช้ข้อมูล offline');
+    hideLoading();
+    renderAll();
+    showError('กำลังใช้ข้อมูล Offline (ยังไม่ได้ตั้งค่า APPS_SCRIPT_URL)', false);
+    return;
+  }
+
+  setRefreshLoading(true);
+  if (!isManual) showLoading('กำลังโหลดข้อมูลจาก Google Sheets...');
+
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL, { cache: 'no-store' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    RAW = data;
+    hideError();
+    renderAll();
+
+    const genAt = data.generatedAt || 'เมื่อกี้';
+    document.getElementById('lastUpdated').textContent = `⟳ อัพเดทล่าสุด: ${genAt}`;
+    document.getElementById('currentDate').textContent  = `ข้อมูล ณ ${genAt}`;
+
+  } catch (err) {
+    console.error('Fetch error:', err);
+    showError(`ไม่สามารถดึงข้อมูลได้: ${err.message} — แสดงข้อมูล offline แทน`);
+    renderAll(); // fallback ใช้ข้อมูลเดิม
+  } finally {
+    setRefreshLoading(false);
+    if (!isManual) hideLoading();
+  }
+}
+
+function startAutoRefresh() {
+  if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+  autoRefreshTimer = setInterval(() => fetchData(true), AUTO_REFRESH_INTERVAL);
+}
+
+// ── LOADING / ERROR HELPERS ───────────────────────────────────
+function showLoading(msg) {
+  document.getElementById('loadingOverlay').classList.remove('hidden');
+  document.getElementById('loadingStatus').textContent = msg || '';
+}
+
+function hideLoading() {
+  document.getElementById('loadingOverlay').classList.add('hidden');
+}
+
+function showError(msg, isFatal = true) {
+  const banner = document.getElementById('errorBanner');
+  banner.classList.remove('hidden');
+  document.getElementById('errorMsg').textContent = msg;
+  if (!isFatal) banner.style.background = 'rgba(245,158,11,0.08)';
+}
+
+function hideError() {
+  document.getElementById('errorBanner').classList.add('hidden');
+}
+
+function setRefreshLoading(on) {
+  const btn = document.getElementById('refreshBtn');
+  if (on) btn.classList.add('spinning');
+  else btn.classList.remove('spinning');
+}
+
+// ── RENDER ALL ────────────────────────────────────────────────
+function renderAll() {
+  renderKPI();
+  populateDeptFilter();
+  renderTable();
+}
+
+function setDate() {
+  document.getElementById('currentDate').textContent = 'กำลังโหลด...';
+}
+
+function renderKPI() {
+  const { total, inspected, notInspected, hasIssues } = RAW.summary;
+  const inspectedPct = Math.round(inspected / total * 100);
+  const issuesPct = Math.round(hasIssues / inspected * 100);
+
+  const cards = [
+    {
+      cls: 'total', label: 'รถทั้งหมด', value: total,
+      sub: 'ยานพาหนะในการดูแล', icon: '🚛',
+      bar: null
+    },
+    {
+      cls: 'inspected', label: 'ตรวจแล้ว', value: inspected,
+      sub: `${inspectedPct}% ของรถทั้งหมด`, icon: '✅',
+      bar: { pct: inspectedPct, cls: 'green' }
+    },
+    {
+      cls: 'not-inspected', label: 'ยังไม่ได้ตรวจ', value: notInspected,
+      sub: `${100 - inspectedPct}% ของรถทั้งหมด`, icon: '❌',
+      bar: { pct: 100 - inspectedPct, cls: 'red' }
+    },
+    {
+      cls: 'issues', label: 'พบรายการผิดปกติ', value: hasIssues,
+      sub: `${issuesPct}% ของรถที่ตรวจแล้ว`, icon: '⚠️',
+      bar: { pct: issuesPct, cls: 'red' }
+    }
+  ];
+
+  document.getElementById('kpiGrid').innerHTML = cards.map(c => `
+    <div class="kpi-card ${c.cls}" onclick="applyQuickFilter('${c.cls}')">
+      <div class="kpi-label">${c.label}</div>
+      <div class="kpi-value">${c.value}</div>
+      <div class="kpi-sub">${c.sub}</div>
+      <div class="kpi-icon">${c.icon}</div>
+      ${c.bar ? `
+      <div class="kpi-bar">
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill ${c.bar.cls}" style="width:${c.bar.pct}%"></div>
+          </div>
+          <div class="progress-pct">${c.bar.pct}%</div>
+        </div>
+      </div>` : ''}
+    </div>
+  `).join('');
+}
+
+function applyQuickFilter(cls) {
+  const map = { total: 'all', inspected: 'ok', 'not-inspected': 'none', issues: 'issues' };
+  const f = map[cls] || 'all';
+  setStatusFilter(f);
+}
+
+function populateDeptFilter() {
+  const depts = [...new Set(RAW.vehicles.map(v => v.dept))].sort();
+  const sel = document.getElementById('deptFilter');
+  const currentVal = sel.value;
+  // ล้าง options เดิม (เก็บ option แรก "ทั้งหมด" ไว้)
+  while (sel.options.length > 1) sel.remove(1);
+  depts.forEach(d => {
+    const opt = document.createElement('option');
+    opt.value = d; opt.textContent = d;
+    sel.appendChild(opt);
+  });
+  sel.value = currentVal; // คืนค่าที่เลือกไว้
+}
+
+function setupListeners() {
+  document.getElementById('searchInput').addEventListener('input', e => {
+    searchTerm = e.target.value.toLowerCase();
+    renderTable();
+  });
+
+  document.getElementById('deptFilter').addEventListener('change', e => {
+    deptFilter = e.target.value;
+    renderTable();
+  });
+
+  document.getElementById('vtypeFilter').addEventListener('change', e => {
+    vtypeFilter = e.target.value;
+    renderTable();
+  });
+
+  document.getElementById('statusTabs').addEventListener('click', e => {
+    const tab = e.target.closest('.filter-tab');
+    if (!tab) return;
+    setStatusFilter(tab.dataset.filter, tab);
+  });
+}
+
+function setStatusFilter(filter, tabEl) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-tab').forEach(t => {
+    t.classList.remove('active', 'green', 'red', 'gray', 'orange');
+  });
+  const activeTab = tabEl || document.querySelector(`[data-filter="${filter}"]`);
+  if (activeTab) {
+    activeTab.classList.add('active');
+    const ac = activeTab.dataset.activeClass;
+    if (ac) activeTab.classList.add(ac);
+  }
+  renderTable();
+}
+
+function getStatus(v) {
+  if (v.totalInspections === 0) return 'none';
+  if (v.hasAbnormal) return 'issues';
+  if (v.daysSince && v.daysSince > 30) return 'overdue';
+  return 'ok';
+}
+
+function renderTable() {
+  const vehicles = RAW.vehicles.filter(v => {
+    const st = getStatus(v);
+    if (currentFilter !== 'all' && st !== currentFilter) return false;
+    if (deptFilter && v.dept !== deptFilter) return false;
+    if (vtypeFilter && v.vtype !== vtypeFilter) return false;
+    if (searchTerm) {
+      const hay = `${v.plate} ${v.brand} ${v.dept} ${v.responsible} ${v.type}`.toLowerCase();
+      if (!hay.includes(searchTerm)) return false;
+    }
+    return true;
+  });
+
+  document.getElementById('resultsCount').textContent = `แสดง ${vehicles.length} / ${RAW.vehicles.length} คัน`;
+
+  const tbody = document.getElementById('vehicleTableBody');
+  const empty = document.getElementById('emptyState');
+
+  if (vehicles.length === 0) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+
+  empty.style.display = 'none';
+
+  tbody.innerHTML = vehicles.map((v, i) => {
+    const st = getStatus(v);
+    const statusBadge = {
+      ok: `<span class="status-badge ok"><span class="status-dot"></span>ปกติ</span>`,
+      issues: `<span class="status-badge issues"><span class="status-dot"></span>ผิดปกติ</span>`,
+      none: `<span class="status-badge none"><span class="status-dot"></span>ยังไม่ตรวจ</span>`,
+      overdue: `<span class="status-badge overdue"><span class="status-dot"></span>เกิน 30 วัน</span>`
+    }[st];
+
+    const daysCls = !v.daysSince ? 'none'
+      : v.daysSince <= 7 ? 'fresh'
+      : v.daysSince <= 30 ? 'moderate' : 'stale';
+
+    const daysText = v.daysSince === null ? '—'
+      : v.daysSince === 0 ? 'วันนี้'
+      : v.daysSince === 1 ? '1 วันที่แล้ว'
+      : `${v.daysSince} วันที่แล้ว`;
+
+    const histDots = v.history.slice(0, 10).reverse().map(h =>
+      `<div class="hdot ${h.hasAbnormal ? 'issue' : 'ok'}" title="${h.date} — ${h.inspector}"></div>`
+    ).join('');
+
+    const abnPills = v.abnormalItems.length
+      ? `<div class="abnormal-pills">${v.abnormalItems.map(a =>
+          `<span class="abnormal-pill">⚠ ${a}</span>`).join('')}</div>`
+      : `<span style="color:var(--text-muted);font-size:12px;">—</span>`;
+
+    return `<tr onclick="openModal(${v.id})" style="animation-delay:${i * 0.02}s">
+      <td style="color:var(--text-muted);font-family:'Space Mono',monospace;font-size:11px;">${v.id}</td>
+      <td>
+        <div class="plate-cell">${v.plate}</div>
+        <div style="margin-top:3px;"><span class="brand-badge">${v.brand}</span></div>
+      </td>
+      <td>
+        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;">${v.type}</div>
+        <span class="vtype-tag ${v.isCrane ? 'crane' : 'regular'}">${v.vtype}</span>
+      </td>
+      <td><span class="dept-tag">${v.dept}</span></td>
+      <td style="font-size:12px;color:var(--text-secondary);">${v.responsible}</td>
+      <td>${statusBadge}</td>
+      <td><span class="${v.totalInspections === 0 ? 'zero-count' : 'count-badge'}">${v.totalInspections === 0 ? '—' : v.totalInspections}</span></td>
+      <td style="font-size:12px;color:var(--text-secondary);">${v.lastDate || '—'}</td>
+      <td><span class="days-cell ${daysCls}">${daysText}</span></td>
+      <td>${abnPills}</td>
+      <td><div class="history-dots">${histDots || '<span style="color:var(--text-muted);font-size:11px;">ไม่มีประวัติ</span>'}</div></td>
+      <td><button class="view-btn" onclick="event.stopPropagation();openModal(${v.id})">รายละเอียด →</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── MODAL ──
+function openModal(id) {
+  const v = RAW.vehicles.find(x => x.id === id);
+  if (!v) return;
+
+  document.getElementById('mPlate').textContent = v.plate;
+  document.getElementById('mType').textContent = `${v.brand} · ${v.type} · ${v.vtype}`;
+
+  const st = getStatus(v);
+  const stLabel = { ok: '✅ ปกติ', issues: '⚠️ มีรายการผิดปกติ', none: '❌ ยังไม่ได้ตรวจ', overdue: '🕐 เกินกำหนด 30 วัน' }[st];
+
+  const body = document.getElementById('modalBody');
+
+  body.innerHTML = `
+    <div class="modal-meta-grid">
+      <div class="meta-item">
+        <div class="meta-label">แผนก</div>
+        <div class="meta-value">${v.dept}</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">ผู้รับผิดชอบ</div>
+        <div class="meta-value">${v.responsible}</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">สถานะ</div>
+        <div class="meta-value">${stLabel}</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">จำนวนครั้งที่ตรวจ</div>
+        <div class="meta-value" style="font-family:'Space Mono',monospace;">${v.totalInspections} ครั้ง</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">ตรวจล่าสุด</div>
+        <div class="meta-value">${v.lastDate || '—'}</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">ห่างจากวันนี้</div>
+        <div class="meta-value">${v.daysSince !== null ? v.daysSince + ' วัน' : '—'}</div>
+      </div>
+    </div>
+
+    ${v.abnormalItems.length ? `
+    <div class="abnormal-section">
+      <div class="section-title">⚠️ รายการผิดปกติ (การตรวจล่าสุด)</div>
+      <div class="abnormal-grid">
+        ${v.abnormalItems.map(a => `<div class="abnormal-item">⚠ ${a}</div>`).join('')}
+      </div>
+    </div>` : ''}
+
+    <div style="margin-top:20px;">
+      <div class="section-title">📋 ประวัติการตรวจ (${v.history.length} ครั้งล่าสุด)</div>
+      ${v.history.length === 0
+        ? `<div style="text-align:center;padding:30px;color:var(--text-muted);">ไม่มีประวัติการตรวจ</div>`
+        : `<div class="history-list">
+            ${v.history.map((h, i) => `
+              <div class="history-item ${h.hasAbnormal ? 'has-issue' : ''}">
+                <div class="h-date">${h.date}</div>
+                <div class="h-inspector">👤 ${h.inspector}</div>
+                <div class="h-status ${h.hasAbnormal ? 'issue' : 'ok'}">${h.hasAbnormal ? '⚠ ผิดปกติ' : '✓ ปกติ'}</div>
+              </div>
+            `).join('')}
+          </div>`
+      }
+    </div>
+  `;
+
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('modalOverlay')) {
+    document.getElementById('modalOverlay').classList.remove('open');
+  }
+}
+
+function closeModalBtn() {
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.getElementById('modalOverlay').classList.remove('open');
+});
+</script>
+</body>
+</html>
